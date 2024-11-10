@@ -3,37 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
+    <title>MS RAMAIAH APPLIED SCIENCE</title>
+    <link rel="stylesheet" href="style2.css"> 
 </head>
 <body>
+ 
     <div align="center">
-        <h1>MS RAMAIAH UNIVERSITY OF APPLIED SCIENCES</h1>
-         id:
-        <br>
+        <img src="https://radec.s3.amazonaws.com/logo.png" alt="College Image" style="width: 100%; max-width: 400px;">
+        <h1>MS RAMAIAH  OF APPLIED SCIENCE</h1>
+
+        <label for="stdid">id:</label>
         <input type="text" name="stdid" id="stdid">
-        <br> address:
         <br>
-        <input type="text" name="stdaddress" id="stdaddress">
-        <br> city:
-        <br>
-        <input type="text" name="stdcity" id="stdcity">
-        <br> DOB:
-        <br>
-        <input type="text" name="stddob" id="stddob">
-        <br> Email:
-        <br>
-        <input type="text" name="stdemail" id="stdemail">
-        <br>
-        <br> Name:
-        <br>
+
+        <label for="stdName">Name:</label>
         <input type="text" name="stdName" id="stdName">
         <br>
+
+        <label for="stdaddress">dob:</label>
+        <input type="text" name="stddob" id="stddob">
+        <br>
+
+        <label for="stdcity">city:</label>
+        <input type="text" name="stdcity" id="stdcity">
+        <br>
+
+        <label for="stddob">address:</label>
+        <input type="text" name="stdaddress" id="stdaddress">
+        <br>
+
+        <label for="stdemail">email:</label>
+        <input type="text" name="stdnemail" id="stdemail">
+        <br>
+
+       
+
         <input type="submit" id="saveprofile" value="Save Profile">
-        <br>
         <p id="profileSaved"></p>
-        <br>
-        <input type="submit" id="getprofile" value="View all the student Profiles">
-        <br>
+
+        <input type="submit" id="getprofile" value="View all Student Profiles">
         <div id="showProfile">
             <table id="studentProfile">
                 <colgroup>
@@ -47,15 +55,91 @@
                 <tbody>
                     <tr>
                         <th>id</th>
-                        <th>address</th>
-                        <th>city</th>
-                        <th>DOB</th>
-                        <th>Email</th>
                         <th>Name</th>
+                        <th>dob</th>
+                        <th>city</th>
+                        <th>address</th>
+                        <th>email</th>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    
+    
+
+
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+
+    
+    <script>
+        var STUDENT_API_ENDPOINT_GET = "https://imql7p3hq0.execute-api.us-east-1.amazonaws.com/prod/GET";
+        var STUDENT_API_ENDPOINT_POST = "https://imql7p3hq0.execute-api.us-east-1.amazonaws.com/prod/post";
+        var API_KEY = "jbGZYLp8gV1arP4vcN2eW4wISZZfG4EN1nxuFtqr"; 
+
+    
+        document.getElementById("saveprofile").onclick = function(){
+            var inputData = {
+                "stdid": $('#stdid').val(),
+                "stdName": $('#stdName').val(),
+                "stddob": $('#stddob').val(),
+                "stdcity": $('#stdcity').val(),
+                "stdaddress": $('#stdaddress').val(),
+                "stdemail": $('#stdemail').val(),
+               
+            };
+
+            fetch(STUDENT_API_ENDPOINT_POST, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + API_KEY
+                },
+                body: JSON.stringify(inputData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("profileSaved").innerHTML = "Profile Saved!";
+            })
+            .catch(error => {
+                alert("error");
+            });
+        };
+
+
+        
+
+        
+        document.getElementById("getprofile").onclick = function(){
+           
+
+            fetch(STUDENT_API_ENDPOINT_GET, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + API_KEY
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                $('#studentProfile tr').slice(1).remove();
+                data.forEach(item => {
+                    $("#studentProfile").append("<tr> \
+                        <td>" + item['stdid'] + "</td> \
+                        <td>" + item['stdName'] + "</td> \
+                        <td>" + item['stddob'] + "</td> \
+                        <td>" + item['stdcity'] + "</td> \
+                        <td>" + item['stdaddress'] + "</td> \
+                        <td>" + item['stdemail'] + "</td> \
+                          </tr>");
+                });
+            })
+            .catch(error => {
+                alert("error");
+            });
+        };
+       
+    </script>
 </body>
 </html>
