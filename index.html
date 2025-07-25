@@ -1,145 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MS RAMAIAH APPLIED SCIENCE</title>
-    <link rel="stylesheet" href="style2.css"> 
+  <title>Bangalore Colleges Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Quicksand', sans-serif;
+      background: #f5f5f5;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: 95%;
+      max-width: 600px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #searchInput, #areaFilter {
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 280px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    #map {
+      position: absolute;
+      top: 70px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+    .leaflet-popup-content-wrapper {
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
- 
-    <div align="center">
-        <img src="https://radec.s3.amazonaws.com/logo.png" alt="College Image" style="width: 100%; max-width: 400px;">
-        <h1>MS RAMAIAH  OF APPLIED SCIENCE</h1>
 
-        <label for="stdid">id:</label>
-        <input type="text" name="stdid" id="stdid">
-        <br>
+  <div id="controls">
+    <input type="text" id="searchInput" placeholder="🔍 Search by name or location..." />
+    <select id="areaFilter">
+      <option value="">📍 Filter by area</option>
+    </select>
+  </div>
 
-        <label for="stdName">Name:</label>
-        <input type="text" name="stdName" id="stdName">
-        <br>
+  <div id="map"></div>
 
-        <label for="stdaddress">dob:</label>
-        <input type="text" name="stddob" id="stddob">
-        <br>
+  <script>
+    const map = L.map('map').setView([12.9716, 77.5946], 11);
 
-        <label for="stdcity">city:</label>
-        <input type="text" name="stdcity" id="stdcity">
-        <br>
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data © OpenStreetMap contributors'
+    }).addTo(map);
 
-        <label for="stddob">address:</label>
-        <input type="text" name="stdaddress" id="stdaddress">
-        <br>
+    const markers = [];
+    let colleges = [];
 
-        <label for="stdemail">email:</label>
-        <input type="text" name="stdnemail" id="stdemail">
-        <br>
+    fetch("https://raw.githubusercontent.com/taruncodeplace6666/data/main/colleges.json")
+      .then(res => res.json())
+      .then(data => {
+        colleges = data;
+        populateMarkers(colleges);
+        populateAreaFilter(colleges);
+      });
 
-       
+    function populateMarkers(data) {
+      data.forEach(college => {
+        if (college.Latitude && college.Longitude) {
+          const marker = L.marker([college.Latitude, college.Longitude])
+            .addTo(map)
+            .bindPopup(`<strong>${college.Name}</strong><br>${college.Location}`);
+          marker.collegeData = college;
+          markers.push(marker);
+        }
+      });
+    }
 
-        <input type="submit" id="saveprofile" value="Save Profile">
-        <p id="profileSaved"></p>
+    function populateAreaFilter(data) {
+      const areaSelect = document.getElementById('areaFilter');
+      const areas = [...new Set(data.map(col => getArea(col.Location)))].sort();
+      areas.forEach(area => {
+        const opt = document.createElement('option');
+        opt.value = area;
+        opt.textContent = area;
+        areaSelect.appendChild(opt);
+      });
+    }
 
-        <input type="submit" id="getprofile" value="View all Student Profiles">
-        <div id="showProfile">
-            <table id="studentProfile">
-                <colgroup>
-                    <col style="width:20%">
-                    <col style="width:20%">
-                    <col style="width:20%">
-                    <col style="width:20%">
-                    <col style="width:20%">
-                    <col style="width:20%">
-                </colgroup>
-                <tbody>
-                    <tr>
-                        <th>id</th>
-                        <th>Name</th>
-                        <th>dob</th>
-                        <th>city</th>
-                        <th>address</th>
-                        <th>email</th>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    
+    function getArea(location) {
+      if (!location) return '';
+      const parts = location.split(',');
+      return parts[parts.length - 1].trim().toUpperCase();  
+    }
 
+    document.getElementById('searchInput').addEventListener('input', function () {
+      const query = this.value.toLowerCase();
+      markers.forEach(marker => {
+        const name = marker.collegeData.Name.toLowerCase();
+        const location = marker.collegeData.Location.toLowerCase();
+        if (name.includes(query) || location.includes(query)) {
+          marker.setOpacity(1);
+          marker.addTo(map);
+        } else {
+          marker.remove();
+        }
+      });
+    });
 
-    
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-
-    
-    <script>
-        var STUDENT_API_ENDPOINT_GET = "https://imql7p3hq0.execute-api.us-east-1.amazonaws.com/prod/GET";
-        var STUDENT_API_ENDPOINT_POST = "https://imql7p3hq0.execute-api.us-east-1.amazonaws.com/prod/post";
-        var API_KEY = "jbGZYLp8gV1arP4vcN2eW4wISZZfG4EN1nxuFtqr"; 
-
-    
-        document.getElementById("saveprofile").onclick = function(){
-            var inputData = {
-                "stdid": $('#stdid').val(),
-                "stdName": $('#stdName').val(),
-                "stddob": $('#stddob').val(),
-                "stdcity": $('#stdcity').val(),
-                "stdaddress": $('#stdaddress').val(),
-                "stdemail": $('#stdemail').val(),
-               
-            };
-
-            fetch(STUDENT_API_ENDPOINT_POST, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + API_KEY
-                },
-                body: JSON.stringify(inputData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("profileSaved").innerHTML = "Profile Saved!";
-            })
-            .catch(error => {
-                alert("error");
-            });
-        };
-
-
-        
-
-        
-        document.getElementById("getprofile").onclick = function(){
-           
-
-            fetch(STUDENT_API_ENDPOINT_GET, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + API_KEY
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                $('#studentProfile tr').slice(1).remove();
-                data.forEach(item => {
-                    $("#studentProfile").append("<tr> \
-                        <td>" + item['stdid'] + "</td> \
-                        <td>" + item['stdName'] + "</td> \
-                        <td>" + item['stddob'] + "</td> \
-                        <td>" + item['stdcity'] + "</td> \
-                        <td>" + item['stdaddress'] + "</td> \
-                        <td>" + item['stdemail'] + "</td> \
-                          </tr>");
-                });
-            })
-            .catch(error => {
-                alert("error");
-            });
-        };
-       
-    </script>
+    document.getElementById('areaFilter').addEventListener('change', function () {
+      const area = this.value.toLowerCase();
+      markers.forEach(marker => {
+        const loc = getArea(marker.collegeData.Location).toLowerCase();
+        if (!area || loc === area) {
+          marker.setOpacity(1);
+          marker.addTo(map);
+        } else {
+          marker.remove();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
+
