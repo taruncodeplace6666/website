@@ -1,254 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bangalore College Map</title>
+
+<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<!-- Marker Cluster -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+
+<!-- Search -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.src.css" />
+
 <style>
-    body { 
-        margin: 0; 
-        padding: 0; 
-        font-family: Arial, sans-serif;
-    }
-    #map { 
-        width: 100%; 
-        height: 100vh; 
-    }
-    .college-popup {
-        padding: 10px;
-        min-width: 200px;
-    }
-    .college-popup h3 {
-        margin: 0 0 8px 0;
-        color: #2c3e50;
-        font-size: 16px;
-    }
-    .college-popup p {
-        margin: 4px 0;
-        color: #555;
-        font-size: 14px;
-    }
-    .loading {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
-    }
+body { margin: 0; font-family: Arial, sans-serif; }
+#map { height: 100vh; width: 100%; }
+
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 999;
+}
+
+.popup h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.popup p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.popup a {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #007bff;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.popup a:hover { background: #0056b3; }
 </style>
 </head>
+
 <body>
 
 <div id="map"></div>
-<div id="loading" class="loading">Loading colleges data...</div>
+<div id="loading" class="loading">Loading colleges...</div>
 
+<!-- JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.src.js"></script>
 
 <script>
-    // Initialize map
-    const map = L.map('map').setView([12.9716, 77.5946], 11);
+const map = L.map('map').setView([12.9716, 77.5946], 11);
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19
-    }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
 
-    // Create layer group for markers
-    const markersLayer = new L.LayerGroup().addTo(map);
+const cluster = L.markerClusterGroup();
+map.addLayer(cluster);
 
-    // Custom icon for colleges
-    const collegeIcon = L.icon({
-        iconUrl: 'https://unpkg.com/leaflet/dist/images/marker-icon.png',
-        iconRetinaUrl: 'https://unpkg.com/leaflet/dist/images/marker-icon-2x.png',
-        shadowUrl: 'https://unpkg.com/leaflet/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
+const collegeIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+const jsonUrl = "https://raw.githubusercontent.com/taruncodeplace6666/data/main/colleges.json";
+
+fetch(jsonUrl)
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to load JSON");
+    return res.json();
+  })
+  .then(data => {
+    document.getElementById("loading").style.display = "none";
+
+    data.forEach(college => {
+      const lat = parseFloat(college.Latitude);
+      const lng = parseFloat(college.Longitude);
+
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      const popup = `
+        <div class="popup">
+          <h3>${college.Name || "Unknown College"}</h3>
+          <p><b>📍</b> ${college.Location || "N/A"}</p>
+          <p><b>📌</b> ${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">
+            🚗 Get Directions
+          </a>
+        </div>
+      `;
+
+      const marker = L.marker([lat, lng], {
+        icon: collegeIcon,
+        title: college.Name
+      }).bindPopup(popup);
+
+      marker.collegeName = college.Name;
+      cluster.addLayer(marker);
     });
 
-    // CORRECT URL for your GitHub repository
-    // Using raw.githubusercontent.com with your username and repo name
-    const jsonUrl = 'https://raw.githubusercontent.com/taruncodeplace6666/data/main/colleges.json';
-    
-    console.log('Loading data from:', jsonUrl);
+    map.fitBounds(cluster.getBounds(), { padding: [40, 40] });
 
-    // Load college data
-    fetch(jsonUrl)
-        .then(response => {
-            console.log('Response status:', response.status, 'OK:', response.ok);
-            
-            if (!response.ok) {
-                // Try alternative URL if main one fails
-                throw new Error(`Failed to load data (Status: ${response.status})`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Successfully loaded data:', data);
-            
-            // Hide loading message
-            document.getElementById('loading').style.display = 'none';
-            
-            // Check if data is valid
-            if (!Array.isArray(data)) {
-                throw new Error('Data is not an array');
-            }
-            
-            // Add markers for each college
-            data.forEach((college, index) => {
-                // Create popup content
-                const popupContent = `
-                    <div class="college-popup">
-                        <h3>${college.Name || 'Unknown College'}</h3>
-                        <p><strong>📍 Location:</strong> ${college.Location || 'Not specified'}</p>
-                        <p><strong>📌 Coordinates:</strong> 
-                            ${college.Latitude ? college.Latitude.toFixed(4) : 'N/A'}, 
-                            ${college.Longitude ? college.Longitude.toFixed(4) : 'N/A'}
-                        </p>
-                    </div>
-                `;
-                
-                // Create marker
-                const marker = L.marker([
-                    parseFloat(college.Latitude) || 12.9716,
-                    parseFloat(college.Longitude) || 77.5946
-                ], {
-                    icon: collegeIcon,
-                    title: college.Name || `College ${index + 1}`
-                })
-                .bindPopup(popupContent)
-                .addTo(markersLayer);
-                
-                // Add properties for search
-                marker.collegeName = college.Name || '';
-                marker.location = college.Location || '';
-            });
-            
-            console.log(`Added ${data.length} markers to map`);
-            
-            // Add search control
-            const searchControl = new L.Control.Search({
-                layer: markersLayer,
-                propertyName: 'collegeName',
-                initial: false,
-                zoom: 14,
-                marker: false,
-                textPlaceholder: 'Search colleges...',
-                textErr: 'College not found',
-                position: 'topright',
-                hideMarkerOnCollapse: true
-            });
-            
-            searchControl.on('search:locationfound', function(e) {
-                e.layer.openPopup();
-            });
-            
-            map.addControl(searchControl);
-            
-            // Fit bounds to show all markers
-            if (data.length > 0) {
-                const bounds = markersLayer.getBounds();
-                if (bounds.isValid()) {
-                    map.fitBounds(bounds, { 
-                        padding: [50, 50],
-                        maxZoom: 13 
-                    });
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            
-            // Show error on map
-            document.getElementById('loading').innerHTML = 
-                `<div style="color: red; text-align: center;">
-                    <h3>Error Loading Data</h3>
-                    <p>${error.message}</p>
-                    <p>URL used: ${jsonUrl}</p>
-                    <p>Check if your JSON file exists at the above URL.</p>
-                </div>`;
-            
-            // Add some sample markers for testing
-            addSampleColleges();
-        });
+    const search = new L.Control.Search({
+      layer: cluster,
+      propertyName: 'collegeName',
+      zoom: 15,
+      marker: false,
+      textPlaceholder: "Search college..."
+    });
 
-    // Function to add sample colleges if main load fails
-    function addSampleColleges() {
-        const sampleColleges = [
-            {
-                "Name": "Indian Institute of Science (IISc)",
-                "Location": "Malleswaram, Bangalore",
-                "Latitude": 13.0215,
-                "Longitude": 77.5670
-            },
-            {
-                "Name": "Christ University",
-                "Location": "Hosur Road, Bangalore",
-                "Latitude": 12.9333,
-                "Longitude": 77.6039
-            },
-            {
-                "Name": "RV College of Engineering",
-                "Location": "Mysore Road, Bangalore",
-                "Latitude": 12.9235,
-                "Longitude": 77.4987
-            },
-            {
-                "Name": "Bangalore Medical College",
-                "Location": "Fort, K.R. Market",
-                "Latitude": 12.9647,
-                "Longitude": 77.5765
-            },
-            {
-                "Name": "National Institute of Fashion Technology",
-                "Location": "HSR Layout, Bangalore",
-                "Latitude": 12.9121,
-                "Longitude": 77.6446
-            }
-        ];
-        
-        sampleColleges.forEach(college => {
-            L.marker([college.Latitude, college.Longitude], { icon: collegeIcon })
-                .addTo(map)
-                .bindPopup(`<strong>${college.Name}</strong><br>${college.Location}`);
-        });
-        
-        // Show message
-        const errorMsg = L.control({position: 'bottomright'});
-        errorMsg.onAdd = function() {
-            const div = L.DomUtil.create('div', 'info');
-            div.innerHTML = '<div style="background: white; padding: 10px; border: 2px solid red; border-radius: 5px;">⚠ Using sample data</div>';
-            return div;
-        };
-        errorMsg.addTo(map);
-    }
+    search.on("search:locationfound", e => e.layer.openPopup());
+    map.addControl(search);
+  })
+  .catch(err => {
+    document.getElementById("loading").innerHTML =
+      `<b style="color:red">Error loading data</b><br>${err.message}`;
+  });
 
-    // Add scale control
-    L.control.scale().addTo(map);
-
-    // Add legend/info
-    const info = L.control({position: 'bottomleft'});
-    info.onAdd = function() {
-        this._div = L.DomUtil.create('div', 'info');
-        this._div.innerHTML = `
-            <div style="background: white; padding: 10px; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.4);">
-                <h4 style="margin: 0 0 5px 0;">🎓 Bangalore Colleges</h4>
-                <p style="margin: 0; font-size: 12px;">Click markers for details</p>
-                <p style="margin: 5px 0 0 0; font-size: 12px;">Use search at top-right</p>
-            </div>
-        `;
-        return this._div;
-    };
-    info.addTo(map);
+L.control.scale().addTo(map);
 </script>
+
 </body>
 </html>
